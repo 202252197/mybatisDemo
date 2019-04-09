@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<!--通过这个配置文件，完成mybatis与数据库的连接  -->
+<configuration>
+    <!--dataSource里面的字面值属性优先级>>外部的properties文件里面的属性的优先级>>properties里面的子节点的属性-->
+    <!-- 注意此配置文件内的元素的  -->
+    <!-- 引入database.properties文件 -->
+    <properties resource="database.properties"/>
+    <settings>
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        <setting name="logImpl" value="LOG4J"/>
+        <setting name="cacheEnabled" value="true"/>
+    </settings>
+    <!--<typeAliases>-->
+        <!--<typeAlias type="com.lvshihao.entity.User" alias="user"></typeAlias>-->
+    <!--</typeAliases>-->
+    <environments default="mysql">
+        <environment id="mysql">
+            <!-- 配置事务管理 ，采用JDBC管理事务-->
+            <transactionManager type="JDBC"/>
+            <!-- POOLED是mybatis的 数据源 -->
+            <!-- JNDI是基于tomcat的数据源 -->
+            <dataSource type="POOLED">
+                <property name="driver" value="${driver}"/>
+                <property name="url" value="${url}"/>
+                <property name="username" value="${username}"/>
+                <property name="password" value="${password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+
+
+    <!-- pojo的映射文件UserMapper引入到配入到配置文件中 -->
+    <mappers>
+        <mapper resource="mapper/UserMapper.xml"></mapper>
+        <mapper resource="mapper/AuthorMapper.xml"></mapper>
+    </mappers>
+</configuration>

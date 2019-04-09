@@ -1,0 +1,237 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lvshihao.dao.UserMapper">
+    <!--开启mybatis的二级缓存,以下是配置缓存的一些属性具体可查阅官网,还有不建议使用mybatis,应该使用第三方缓存如Redis
+    因为mybatis不是专注于缓存使用的-->
+    <cache
+            eviction="FIFO"
+            flushInterval="60000"
+            size="512"
+            readOnly="true"/>
+    <!--引用其他命名空间的缓存如:
+        <cache-ref namespace="com.lvshihao.SomeMapper"/>
+    -->
+<!--Test1测试-->
+    <select id="getAllUser" resultType="com.lvshihao.entity.User">
+        select * from users
+    </select>
+    <select id="getOneUser"  resultType="com.lvshihao.entity.User">
+        SELECT * FROM users WHERE `name`=#{name} AND `describe`=#{describe}
+    </select>
+    <select id="getOneUserByUser"  resultType="com.lvshihao.entity.User">
+        SELECT * FROM users WHERE `name`=#{user.name} AND `describe`=#{user.describe}
+    </select>
+    <select id="getOneUserByMap"  resultType="com.lvshihao.entity.User">
+        SELECT * FROM users WHERE `name`=#{map.name} AND `describe`=#{map.describe}
+    </select>
+    <select id="getOneUserBy2User"  resultType="com.lvshihao.entity.User">
+        SELECT * FROM users WHERE `name`=#{user1.name} AND `describe`=#{user2.describe}
+    </select>
+<!--Test2测试-->
+    <!--将常用的sql片段提取成一个sql语句-->
+    <sql id="selectsql">
+        SELECT * FROM users
+    </sql>
+    <select id="getOneUser2" resultType="com.lvshihao.entity.User">
+        <!--include标签和sql配合使用,代表引用sql片段-->
+        <include refid="selectsql"/>
+        <where>
+            <if test="name !=null and name !=''">
+               and name=#{name}
+            </if>
+            <if test="describe !=null and describe !=''">
+               and `describe`=#{describe}
+            </if>
+        </where>
+    </select>
+    <!--parameterType是入参的类型,对于mybatis而言,绝大部分都进行了自我推断-->
+    <update id="updateOneUser">
+        UPDATE users
+        <set>
+            <if test="name !=null and name !=''">
+                `name`=#{name},
+            </if>
+            <if test="describe !=null and describe !=''">
+                `describe`=#{describe},
+            </if>
+        </set>
+        <where>
+            <if test="id !=null and id !=''">
+                `id`=#{id}
+            </if>
+        </where>
+    </update>
+    <select id="getUserByChoose" resultType="com.lvshihao.entity.User">
+        SELECT * FROM users
+        <where>
+            <choose>
+                <when test="name !=null and name !=''">
+                    `name`=#{name}
+                </when>
+                <when test="describe !=null and describe !=''">
+                    `describe`=#{describe}
+                </when>
+                <otherwise>
+                    1=1
+                </otherwise>
+            </choose>
+        </where>
+    </select>
+    <select id="getUserByTrem" resultType="com.lvshihao.entity.User">
+        SELECT * FROM users
+        <trim prefix="WHERE " suffixOverrides="AND">
+            <if test="name !=null and name !=''">
+                `name`=#{name} AND
+            </if>
+            <if test="describe !=null and describe !=''">
+                `describe`=#{describe} AND
+            </if>
+        </trim>
+    </select>
+    <!--
+        collection:代表的是参数属性名 类型如 list,map,set
+        open:代表的是开始的内容
+        close:代表的是结束的内容
+        item:代表每一个迭代的元素名称
+        separator:代表每一个迭代元素的分隔内容
+        index:代表每一个元素的下标一般不用 index="index"      #{index}从0下标开始
+    -->
+    <select id="getUserByForeach" resultType="com.lvshihao.entity.User">
+        SELECT  * FROM users
+        <where>
+            id in
+            <foreach collection="lists" open="(" close=")" item="id" separator="," index="index">
+                #{id}+#{index}
+            </foreach>
+        </where>
+    </select>
+    <select id="getUserByLike1" resultType="com.lvshihao.entity.User">
+        SELECT * FROM users
+        <where>
+            <if test="matching !=null and matching !=''">
+                name like CONCAT("%",#{matching},"%")
+            </if>
+        </where>
+    </select>
+    <!--#{}不支持拼接%,${}支持拼接%但是不能防止sql注入-->
+    <select id="getUserByLike2" resultType="com.lvshihao.entity.User">
+        <bind name="_matching" value="'%'+matching+'%'"/>
+        SELECT * FROM users
+        <where>
+            <if test="matching !=null and matching !=''">
+                name like #{_matching}
+            </if>
+        </where>
+    </select>
+    <select id="getUserByLike3" resultType="com.lvshihao.entity.User">
+        SELECT * FROM users
+        <where>
+            <if test="matching !=null and matching !=''">
+                name like #{matching}
+            </if>
+        </where>
+    </select>
+    <!--mybatis中的1级缓存是默认开启的,不能关闭1级缓存,1级缓存存在于同一个会话中也就是同一个sqlSession中-->
+    <select id="testCache" resultType="com.lvshihao.entity.User">
+        <include refid="selectsql"></include>
+    </select>
+
+
+    <!--Test3测试-->
+    <!--property对应的是javabean的属性,column对应的是数据库中的列-->
+    <!--提取出来一个map用于其他map继承,重构-->
+    <resultMap id="common" type="com.lvshihao.entity.Books">
+        <id column="id"  property="id"/>
+        <result column="book" property="book"/>
+    </resultMap>
+    <!--封装方法1 官方推荐写法-->
+    <resultMap id="oneBookWithAuthor1" extends="common" type="com.lvshihao.entity.BooksWithAuthor">
+        <!--告诉mybatis如何封装author这个对象-->
+        <association property="author" javaType="com.lvshihao.entity.Author">
+            <id column="aid" property="id"/>
+            <result column="bid" property="bId"/>
+            <result column="author" property="author"/>
+            <association property="books"  javaType="com.lvshihao.entity.Books">
+                <id column="id"  property="id"/>
+                <result column="book" property="book"/>
+            </association>
+        </association>
+    </resultMap>
+    <!--封装方法2-->
+    <resultMap id="oneBookWithAuthor2" extends="common" type="com.lvshihao.entity.BooksWithAuthor">
+        <!--告诉mybatis如何封装author这个对象-->
+        <result column="aid" property="author.id"/>
+        <result column="bid" property="author.bId"/>
+        <result column="author" property="author.author"/>
+        <result column="id" property="author.books.id"/>
+        <result column="book" property="author.books.book"/>
+    </resultMap>
+    <!--封装方法3-->
+    <resultMap id="oneBookWithAuthor3" extends="common" type="com.lvshihao.entity.BooksWithAuthor">
+        <!--告诉mybatis如何封装author这个对象-->
+        <association property="author"  select="com.lvshihao.dao.AuthorMapper.getAuthorById"  column="id" ></association>
+    </resultMap>
+    <!--1对1关系映射-->
+    <select id="getOneBookWithAuthor" resultMap="oneBookWithAuthor1">
+        SELECT b.id,a.id as aid,a.b_id as bid,b.book,a.author FROM books b,authors a
+        <where>
+             b.id=a.id and a.author=#{arg1}
+        </where>
+    </select>
+    <!--1对1关系映射,分步查询-->
+    <select id="getOneBookWithAuthor2" resultMap="oneBookWithAuthor3">
+        SELECT * FROM books
+        <where>
+            book=#{book}
+        </where>
+    </select>
+    <select id="getBook" resultType="com.lvshihao.entity.Books">
+        SELECT * FROM books
+        <where>
+            id=#{bookid}
+        </where>
+    </select>
+
+    <!--1对多关系映射-->
+    <resultMap id="oneToMany" extends="common" type="com.lvshihao.entity.OnetoMany">
+        <!--告诉mybatis如何封装author这个对象-->
+        <!--ofType描述的是集合中元素的类型-->
+        <collection property="authors" ofType="com.lvshihao.entity.Author">
+            <id column="aid" property="id"/>
+            <result column="bid" property="bId"/>
+            <result column="author" property="author"/>
+            <association property="books"  javaType="com.lvshihao.entity.Books">
+                <id column="id"  property="id"/>
+                <result column="book" property="book"/>
+            </association>
+        </collection>
+    </resultMap>
+    <select id="getBookToManyAuthor" resultMap="oneToMany">
+        SELECT b.id,b.book,a.id aid,a.b_id bid,a.author author FROM books b,authors a
+        <where>
+            b.book=#{book} and b.id=a.b_id
+        </where>
+    </select>
+    <!--多对多关系映射-->
+    <resultMap id="manytoMany" type="com.lvshihao.entity.ManytoMany">
+        <result property="msg" column="msg"/>
+        <!--告诉mybatis如何封装author这个对象-->
+        <!--ofType描述的是集合中元素的类型-->
+        <collection property="book2s" ofType="com.lvshihao.entity.Books2" >
+            <id column="id" property="id"/>
+            <result column="book" property="book"/>
+            <collection property="authors"  ofType="com.lvshihao.entity.Author">
+                <id column="aid"  property="id"/>
+                <result column="bId" property="bId"/>
+                <result column="author" property="author"/>
+            </collection>
+        </collection>
+    </resultMap>
+    <select id="getManytoMany" resultMap="manytoMany">
+        SELECT CONCAT("吕世昊","你","最帅") as msg,b.id id,b.book book,a.id aid,a.b_id bId,a.author author FROM books b,authors a
+        <where>
+            b.id=a.b_id
+        </where>
+    </select>
+</mapper>
